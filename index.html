@@ -428,8 +428,8 @@
             return utmParams;
         }
 
-        // Função para construir URL com parâmetros UTM + gênero
-        function buildUrlWithUtm(baseUrl, gender) {
+        // Função para construir URL com parâmetros UTM (SEM parâmetro gender)
+        function buildUrlWithUtm(baseUrl) {
             // Primeiro tenta pegar da URL atual, depois do localStorage
             let utmParams = getUtmParamsFromUrl();
             
@@ -438,28 +438,37 @@
                 utmParams = getUtmParamsFromStorage();
             }
             
-            // Constrói a URL com parâmetros
-            const url = new URL(baseUrl);
+            // Se não tem parâmetros UTM, retorna URL original
+            if (Object.keys(utmParams).length === 0) {
+                console.log('UTM Quiz: Nenhum parâmetro UTM encontrado para preservar');
+                return baseUrl;
+            }
             
-            // Adiciona parâmetro de gênero
-            url.searchParams.set('gender', gender);
+            // Constrói a query string APENAS com UTM
+            const utmQuery = Object.keys(utmParams)
+                .map(key => `${key}=${encodeURIComponent(utmParams[key])}`)
+                .join('&');
             
-            // Adiciona parâmetros UTM se existirem
-            Object.keys(utmParams).forEach(key => {
-                if (utmParams[key]) {
-                    url.searchParams.set(key, utmParams[key]);
-                }
-            });
+            // Adiciona os parâmetros à URL
+            const separator = baseUrl.includes('?') ? '&' : '?';
+            const finalUrl = `${baseUrl}${separator}${utmQuery}`;
             
-            console.log('UTM Quiz: URL final com gênero e UTM:', url.toString());
-            console.log('UTM Quiz: Gênero selecionado:', gender);
-            console.log('UTM Quiz: Parâmetros UTM preservados:', utmParams);
+            console.log('UTM Quiz: URL com parâmetros UTM:', finalUrl);
+            console.log('UTM Quiz: Parâmetros preservados:', utmParams);
             
-            return url.toString();
+            return finalUrl;
         }
 
-        // Função para selecionar opção e redirecionar com UTM preservado + gênero
+        // Função para selecionar opção e redirecionar (USANDO LOCALSTORAGE)
         function selectOption(gender) {
+            // Salva o gênero no localStorage
+            try {
+                localStorage.setItem('user_gender', gender);
+                console.log('Gênero salvo no localStorage:', gender);
+            } catch (e) {
+                console.log('Erro ao salvar gênero no localStorage:', e);
+            }
+            
             // Adiciona efeito visual de seleção
             document.querySelectorAll('.option-card').forEach(card => {
                 card.classList.remove('selected');
@@ -470,7 +479,7 @@
             // Pequeno delay para mostrar a seleção antes de redirecionar
             setTimeout(() => {
                 const baseUrl = 'https://valorecapital.com.br/app-rec03-nike-roupas/';
-                const finalUrl = buildUrlWithUtm(baseUrl, gender);
+                const finalUrl = buildUrlWithUtm(baseUrl); // SEM parâmetro gender na URL
                 window.location.href = finalUrl;
             }, 300);
         }
